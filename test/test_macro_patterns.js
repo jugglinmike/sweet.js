@@ -572,6 +572,27 @@ describe("macro expander", function() {
         var x = m( id(4) );
     });
 
+    it("should not consider fn statements as an :expr", function() {
+      var err = new Error('function statement incorrectly matched the `:expr` pattern.');
+      var caughtExpected = false;
+
+      macro # {
+        rule infix { $x:expr | } => { void 0; throw err; }
+        rule {} => {}
+      }
+
+      ;function fn1() {} #
+      function fn2() {} #
+
+      try {
+        0, function fn3() {} #
+      } catch (caught) {
+        caughtExpected = caught === err;
+      }
+
+      expect(caughtExpected).to.be(true);
+    });
+
     it("should match nested obj macros", function() {
         macro m {
             case {_ $o:expr} => {
