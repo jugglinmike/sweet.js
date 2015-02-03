@@ -526,6 +526,24 @@
         return new ConditionalExpression(cond, question, tru, colon, fls);
     };
     inherit(Expr, ConditionalExpression, { 'isConditionalExpression': true });
+    function FunDecl(keyword, star, name, params, body) {
+        this.keyword = keyword;
+        this.star = star;
+        this.name = name;
+        this.params = params;
+        this.body = body;
+    }
+    FunDecl.properties = [
+        'keyword',
+        'star',
+        'name',
+        'params',
+        'body'
+    ];
+    FunDecl.create = function (keyword, star, name, params, body) {
+        return new FunDecl(keyword, star, name, params, body);
+    };
+    inherit(Statement, FunDecl, { 'isFunDecl': true });
     function NamedFun(keyword, star, name, params, body) {
         this.keyword = keyword;
         this.star = star;
@@ -1569,6 +1587,66 @@
                 } else if (head.token.type === parser.Token.Keyword && unwrapSyntax(head) === 'function' && rest[0] && rest[0].token.type === parser.Token.Identifier && rest[1] && rest[1].token.type === parser.Token.Delimiter && rest[1].token.value === '()' && rest[2] && rest[2].token.type === parser.Token.Delimiter && rest[2].token.value === '{}') {
                     rest[1].token.inner = rest[1].expose().token.inner;
                     rest[2].token.inner = rest[2].expose().token.inner;
+                    var FnExprTokens = [
+                        '(',
+                        '{',
+                        '[',
+                        'in',
+                        'typeof',
+                        'instanceof',
+                        'new',
+                        'return',
+                        'case',
+                        'delete',
+                        'throw',
+                        'void',
+                        // assignment operators
+                        '=',
+                        '+=',
+                        '-=',
+                        '*=',
+                        '/=',
+                        '%=',
+                        '<<=',
+                        '>>=',
+                        '>>>=',
+                        '&=',
+                        '|=',
+                        '^=',
+                        ',',
+                        // binary/unary operators
+                        '+',
+                        '-',
+                        '*',
+                        '/',
+                        '%',
+                        '++',
+                        '--',
+                        '<<',
+                        '>>',
+                        '>>>',
+                        '&',
+                        '|',
+                        '^',
+                        '!',
+                        '~',
+                        '&&',
+                        '||',
+                        '?',
+                        ':',
+                        '===',
+                        '==',
+                        '>=',
+                        '<=',
+                        '<',
+                        '>',
+                        '!=',
+                        '!=='
+                    ];
+                    var prevCtx = opCtx.prevStx[0];
+                    if (!prevCtx || FnExprTokens.indexOf(unwrapSyntax(prevCtx)) === -1) {
+                        return step(FunDecl.create(head, null, rest[0], rest[1], rest[2]), rest.slice(3), opCtx);
+                    }
                     return step(NamedFun.create(head, null, rest[0], rest[1], rest[2]), rest.slice(3), opCtx);
                 } else if (head.token.type === parser.Token.Keyword && unwrapSyntax(head) === 'function' && rest[0] && rest[0].token.type === parser.Token.Punctuator && rest[0].token.value === '*' && rest[1] && rest[1].token.type === parser.Token.Identifier && rest[2] && rest[2].token.type === parser.Token.Delimiter && rest[2].token.value === '()' && rest[3] && rest[3].token.type === parser.Token.Delimiter && rest[3].token.value === '{}') {
                     rest[2].token.inner = rest[2].expose().token.inner;
@@ -1756,7 +1834,7 @@
             }
         }
         var res = enforest(stx, context);
-        if (!res.result || !res.result.isExpr) {
+        if (!res.result || !(res.result.isExpr || res.result.isFunDecl)) {
             return {
                 result: null,
                 rest: stx
@@ -2050,7 +2128,7 @@
             destructed = tagWithTerm(head, f.result.destruct());
             prevTerms = [head].concat(f.prevTerms);
             prevStx = destructed.reverse().concat(f.prevStx);
-            if (head.isNamedFun) {
+            if (head.isNamedFun || head.isFunDecl) {
                 addToDefinitionCtx([head.name], context.defscope, true, context.paramscope);
             }
             if (head.isVariableStatement || head.isLetStatement || head.isConstStatement) {
@@ -2219,7 +2297,7 @@
                 term.id = syntaxFromToken(term.id.token, trans.varTransform);
             }
             return term;
-        } else if (term.isNamedFun || term.isAnonFun || term.isCatchClause || term.isArrowFun || term.isModule) {
+        } else if (term.isNamedFun || term.isAnonFun || term.isFunDecl || term.isCatchClause || term.isArrowFun || term.isModule) {
             // function definitions need a bunch of hygiene logic
             // push down a fresh definition context
             var newDef = [];

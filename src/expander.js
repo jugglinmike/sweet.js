@@ -492,6 +492,7 @@
     dataclass BinOp                 (left, op, right)                   extends Expr;
     dataclass AssignmentExpression  (left, op, right)                   extends Expr;
     dataclass ConditionalExpression (cond, question, tru, colon, fls)   extends Expr;
+    dataclass FunDecl               (keyword, star, name, params, body) extends Statement;
     dataclass NamedFun              (keyword, star, name, params, body) extends Expr;
     dataclass AnonFun               (keyword, star, params, body)       extends Expr;
     dataclass ArrowFun              (params, arrow, body)               extends Expr;
@@ -1574,6 +1575,26 @@
 
                     rest[1].token.inner = rest[1].expose().token.inner;
                     rest[2].token.inner = rest[2].expose().token.inner;
+                    var FnExprTokens = [
+                      '(', '{', '[', 'in', 'typeof', 'instanceof', 'new',
+                      'return', 'case', 'delete', 'throw', 'void',
+                      // assignment operators
+                      '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '>>>=',
+                      '&=', '|=', '^=', ',',
+                      // binary/unary operators
+                      '+', '-', '*', '/', '%', '++', '--', '<<', '>>', '>>>', '&',
+                      '|', '^', '!', '~', '&&', '||', '?', ':', '===', '==', '>=',
+                      '<=', '<', '>', '!=', '!=='];
+
+                    var prevCtx = opCtx.prevStx[0];
+                    if (!prevCtx || FnExprTokens.indexOf(unwrapSyntax(prevCtx)) === -1) {
+                    return step(FunDecl.create(head, null, rest[0],
+                                               rest[1],
+                                               rest[2]),
+                                rest.slice(3),
+                                opCtx);
+                    }
+
                     return step(NamedFun.create(head, null, rest[0],
                                                 rest[1],
                                                 rest[2]),
@@ -1861,7 +1882,7 @@
         }
 
         var res = enforest(stx, context);
-        if (!res.result || !res.result.isExpr) {
+        if (!res.result || !(res.result.isExpr || res.result.isFunDecl)) {
             return {
               result: null,
               rest: stx
@@ -2205,7 +2226,7 @@
             prevTerms = [head].concat(f.prevTerms);
             prevStx = destructed.reverse().concat(f.prevStx);
 
-            if (head.isNamedFun) {
+            if (head.isNamedFun || head.isFunDecl) {
                 addToDefinitionCtx([head.name], context.defscope, true, context.paramscope);
             }
 
@@ -2407,6 +2428,7 @@
             return term;
         } else if (term.isNamedFun ||
                    term.isAnonFun ||
+                   term.isFunDecl ||
                    term.isCatchClause ||
                    term.isArrowFun ||
                    term.isModule) {
