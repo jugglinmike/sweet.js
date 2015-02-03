@@ -1573,31 +1573,21 @@
                     rest[2] && rest[2].token.type === parser.Token.Delimiter &&
                     rest[2].token.value === "{}") {
 
+                    var prevCtx = opCtx.prevStx[0];
+                    var dataClass;
                     rest[1].token.inner = rest[1].expose().token.inner;
                     rest[2].token.inner = rest[2].expose().token.inner;
-                    var FnExprTokens = [
-                      '(', '{', '[', 'in', 'typeof', 'instanceof', 'new',
-                      'return', 'case', 'delete', 'throw', 'void',
-                      // assignment operators
-                      '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '>>>=',
-                      '&=', '|=', '^=', ',',
-                      // binary/unary operators
-                      '+', '-', '*', '/', '%', '++', '--', '<<', '>>', '>>>', '&',
-                      '|', '^', '!', '~', '&&', '||', '?', ':', '===', '==', '>=',
-                      '<=', '<', '>', '!=', '!=='];
 
-                    var prevCtx = opCtx.prevStx[0];
-                    if (!prevCtx || FnExprTokens.indexOf(unwrapSyntax(prevCtx)) === -1) {
-                    return step(FunDecl.create(head, null, rest[0],
-                                               rest[1],
-                                               rest[2]),
-                                rest.slice(3),
-                                opCtx);
+                    if (!prevCtx ||
+                      parser.FnExprTokens.indexOf(unwrapSyntax(prevCtx)) === -1) {
+                      dataClass = FunDecl;
+                    } else {
+                      dataClass = NamedFun;
                     }
 
-                    return step(NamedFun.create(head, null, rest[0],
-                                                rest[1],
-                                                rest[2]),
+                    return step(dataClass.create(head, null, rest[0],
+                                                 rest[1],
+                                                 rest[2]),
                                 rest.slice(3),
                                 opCtx);
                 // generator function definition

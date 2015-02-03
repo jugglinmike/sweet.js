@@ -4883,6 +4883,7 @@
     exports$2.tokenize = tokenize;
     exports$2.read = read;
     exports$2.Token = Token;
+    exports$2.FnExprTokens = FnExprTokens;
     exports$2.setReadtable = setReadtable;
     exports$2.currentReadtable = currentReadtable;
     exports$2.parse = parse;

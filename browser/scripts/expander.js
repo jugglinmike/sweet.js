@@ -1585,69 +1585,16 @@
                 } else if (unwrapSyntax(head) === 'module' && rest[0] && rest[0].token.value === '{}') {
                     return step(Module.create(rest[0], []), rest.slice(1), opCtx);
                 } else if (head.token.type === parser.Token.Keyword && unwrapSyntax(head) === 'function' && rest[0] && rest[0].token.type === parser.Token.Identifier && rest[1] && rest[1].token.type === parser.Token.Delimiter && rest[1].token.value === '()' && rest[2] && rest[2].token.type === parser.Token.Delimiter && rest[2].token.value === '{}') {
+                    var prevCtx = opCtx.prevStx[0];
+                    var dataClass;
                     rest[1].token.inner = rest[1].expose().token.inner;
                     rest[2].token.inner = rest[2].expose().token.inner;
-                    var FnExprTokens = [
-                        '(',
-                        '{',
-                        '[',
-                        'in',
-                        'typeof',
-                        'instanceof',
-                        'new',
-                        'return',
-                        'case',
-                        'delete',
-                        'throw',
-                        'void',
-                        // assignment operators
-                        '=',
-                        '+=',
-                        '-=',
-                        '*=',
-                        '/=',
-                        '%=',
-                        '<<=',
-                        '>>=',
-                        '>>>=',
-                        '&=',
-                        '|=',
-                        '^=',
-                        ',',
-                        // binary/unary operators
-                        '+',
-                        '-',
-                        '*',
-                        '/',
-                        '%',
-                        '++',
-                        '--',
-                        '<<',
-                        '>>',
-                        '>>>',
-                        '&',
-                        '|',
-                        '^',
-                        '!',
-                        '~',
-                        '&&',
-                        '||',
-                        '?',
-                        ':',
-                        '===',
-                        '==',
-                        '>=',
-                        '<=',
-                        '<',
-                        '>',
-                        '!=',
-                        '!=='
-                    ];
-                    var prevCtx = opCtx.prevStx[0];
-                    if (!prevCtx || FnExprTokens.indexOf(unwrapSyntax(prevCtx)) === -1) {
-                        return step(FunDecl.create(head, null, rest[0], rest[1], rest[2]), rest.slice(3), opCtx);
+                    if (!prevCtx || parser.FnExprTokens.indexOf(unwrapSyntax(prevCtx)) === -1) {
+                        dataClass = FunDecl;
+                    } else {
+                        dataClass = NamedFun;
                     }
-                    return step(NamedFun.create(head, null, rest[0], rest[1], rest[2]), rest.slice(3), opCtx);
+                    return step(dataClass.create(head, null, rest[0], rest[1], rest[2]), rest.slice(3), opCtx);
                 } else if (head.token.type === parser.Token.Keyword && unwrapSyntax(head) === 'function' && rest[0] && rest[0].token.type === parser.Token.Punctuator && rest[0].token.value === '*' && rest[1] && rest[1].token.type === parser.Token.Identifier && rest[2] && rest[2].token.type === parser.Token.Delimiter && rest[2].token.value === '()' && rest[3] && rest[3].token.type === parser.Token.Delimiter && rest[3].token.value === '{}') {
                     rest[2].token.inner = rest[2].expose().token.inner;
                     rest[3].token.inner = rest[3].expose().token.inner;
